@@ -20,11 +20,13 @@ def get_db():
         db.close()
 
 
+# ==================== HOME PAGE ====================
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 
+# ==================== API ROUTES ====================
 @app.post("/apis/", response_model=schemas.APIResponse)
 def create_api(api: schemas.APICreate, db: Session = Depends(get_db)):
     db_api = models.API(**api.dict())
@@ -43,7 +45,7 @@ def get_all_apis(db: Session = Depends(get_db)):
 def delete_api(api_id: int, db: Session = Depends(get_db)):
     api = db.query(models.API).filter(models.API.id == api_id).first()
     if api is None:
-        raise HTTPException(status_code=404, detail="API not found")
+        raise HTTPException(status_code=404, detail="Not found")
     db.delete(api)
     db.commit()
     return {"message": "Deleted"}
