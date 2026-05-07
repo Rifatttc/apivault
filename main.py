@@ -1,4 +1,6 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Request
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from typing import List
 import models, schemas
@@ -8,7 +10,8 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="APIVault - API + Database Project")
 
-# Dependency
+templates = Jinja2Templates(directory="templates")
+
 def get_db():
     db = SessionLocal()
     try:
@@ -16,11 +19,13 @@ def get_db():
     finally:
         db.close()
 
-@app.get("/")
-def read_root():
-    return {"message": "Welcome to APIVault! API + Database project is running."}
+# ==================== WEB UI ====================
+@app.get("/", response_class=HTMLResponse)
+def home(request: Request, db: Session = Depends(get_db)):
+    apis = db.query(models.API).all()
+    return templates.TemplateResponse("index.html", {"request": request, "apis": apis})
 
-# Create new API
+# ==================== API ENDPOINTS ====================
 @app.post("/apis/", response_model=schemas.APIResponse)
 def create_api(api: schemas.APICreate, db: Session = Depends(get_db)):
     db_api = models.API(**api.dict())
@@ -29,12 +34,10 @@ def create_api(api: schemas.APICreate, db: Session = Depends(get_db)):
     db.refresh(db_api)
     return db_api
 
-# Get all APIs
 @app.get("/apis/", response_model=List[schemas.APIResponse])
 def get_all_apis(db: Session = Depends(get_db)):
     return db.query(models.API).all()
 
-# Get single API
 @app.get("/apis/{api_id}", response_model=schemas.APIResponse)
 def get_api(api_id: int, db: Session = Depends(get_db)):
     api = db.query(models.API).filter(models.API.id == api_id).first()
@@ -42,21 +45,17 @@ def get_api(api_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="API not found")
     return api
 
-# Update API
 @app.put("/apis/{api_id}", response_model=schemas.APIResponse)
 def update_api(api_id: int, api_update: schemas.APIUpdate, db: Session = Depends(get_db)):
     api = db.query(models.API).filter(models.API.id == api_id).first()
     if api is None:
         raise HTTPException(status_code=404, detail="API not found")
-    
     for key, value in api_update.dict(exclude_unset=True).items():
         setattr(api, key, value)
-    
     db.commit()
     db.refresh(api)
     return api
 
-# Delete API
 @app.delete("/apis/{api_id}")
 def delete_api(api_id: int, db: Session = Depends(get_db)):
     api = db.query(models.API).filter(models.API.id == api_id).first()
