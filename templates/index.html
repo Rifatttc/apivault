@@ -3,132 +3,74 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>APIVault - API Manager</title>
+    <title>APIVault</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
-<body class="bg-gray-50">
-    <div class="max-w-6xl mx-auto p-6">
-        <!-- Header -->
-        <div class="flex justify-between items-center mb-8">
-            <div>
-                <h1 class="text-4xl font-bold text-gray-800">APIVault</h1>
-                <p class="text-gray-600">Your Personal API Collection</p>
-            </div>
-            <a href="/docs" target="_blank" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-sm flex items-center gap-2">
-                <i class="fas fa-book"></i>
-                <span>API Docs</span>
-            </a>
-        </div>
+<body class="bg-gray-100 p-6">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6">APIVault - API Manager</h1>
 
-        <!-- Add New API Form -->
-        <div class="bg-white rounded-2xl shadow p-6 mb-8">
-            <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
-                <i class="fas fa-plus-circle text-blue-600"></i>
-                Add New API
-            </h2>
-            
-            <form id="addForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">API Name</label>
-                    <input type="text" id="name" required class="w-full px-4 py-2 border rounded-lg">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">URL</label>
-                    <input type="url" id="url" required class="w-full px-4 py-2 border rounded-lg">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Method</label>
-                    <select id="method" class="w-full px-4 py-2 border rounded-lg">
-                        <option value="GET">GET</option>
-                        <option value="POST">POST</option>
-                        <option value="PUT">PUT</option>
-                        <option value="DELETE">DELETE</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                    <input type="text" id="category" value="General" class="w-full px-4 py-2 border rounded-lg">
-                </div>
-                <div class="md:col-span-2">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                    <textarea id="description" rows="2" class="w-full px-4 py-2 border rounded-lg"></textarea>
-                </div>
-                <div class="md:col-span-2">
-                    <button type="submit" 
-                            class="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium flex items-center gap-2">
-                        <i class="fas fa-save"></i>
-                        <span>Save API</span>
-                    </button>
-                </div>
+        <!-- Add API Form -->
+        <div class="bg-white p-6 rounded-xl shadow mb-8">
+            <h2 class="font-semibold mb-4">Add New API</h2>
+            <form id="form" class="grid grid-cols-2 gap-4">
+                <input type="text" id="name" placeholder="API Name" class="border p-2 rounded" required>
+                <input type="url" id="url" placeholder="API URL" class="border p-2 rounded" required>
+                <select id="method" class="border p-2 rounded">
+                    <option>GET</option>
+                    <option>POST</option>
+                    <option>PUT</option>
+                    <option>DELETE</option>
+                </select>
+                <input type="text" id="category" value="General" class="border p-2 rounded">
+                <button type="submit" class="col-span-2 bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
+                    Save API
+                </button>
             </form>
         </div>
 
         <!-- API List -->
-        <div class="bg-white rounded-2xl shadow overflow-hidden">
-            <div class="px-6 py-4 border-b flex justify-between items-center">
-                <h2 class="text-xl font-semibold">Saved APIs</h2>
-                <span id="count" class="text-sm bg-gray-100 px-3 py-1 rounded-full">0 APIs</span>
-            </div>
-            
-            <table class="w-full">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500">Name</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500">URL</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500">Method</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500">Category</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500">Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="apiTable" class="divide-y"></tbody>
-            </table>
+        <div class="bg-white p-6 rounded-xl shadow">
+            <h2 class="font-semibold mb-4">Saved APIs</h2>
+            <div id="list"></div>
         </div>
     </div>
 
     <script>
         async function loadAPIs() {
             const res = await fetch('/apis/');
-            const apis = await res.json();
-            const tbody = document.getElementById('apiTable');
-            tbody.innerHTML = '';
-            document.getElementById('count').innerText = `${apis.length} APIs`;
-
-            apis.forEach(api => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td class="px-6 py-4 font-medium">${api.name}</td>
-                    <td class="px-6 py-4 text-sm text-blue-600"><a href="\( {api.url}" target="_blank"> \){api.url}</a></td>
-                    <td class="px-6 py-4"><span class="px-3 py-1 text-xs rounded-full \( {api.method === 'GET' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}"> \){api.method}</span></td>
-                    <td class="px-6 py-4 text-sm">${api.category}</td>
-                    <td class="px-6 py-4 text-right">
-                        <button onclick="deleteAPI(${api.id})" class="text-red-500 hover:text-red-700 px-3">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </td>
+            const data = await res.json();
+            let html = '';
+            data.forEach(api => {
+                html += `
+                    <div class="border p-3 mb-2 rounded flex justify-between">
+                        <div>
+                            <strong>${api.name}</strong> 
+                            <span class="text-xs px-2 py-0.5 bg-gray-200 rounded">${api.method}</span><br>
+                            <a href="\( {api.url}" target="_blank" class="text-blue-600 text-sm"> \){api.url}</a>
+                        </div>
+                        <button onclick="deleteAPI(${api.id})" class="text-red-500">Delete</button>
+                    </div>
                 `;
-                tbody.appendChild(row);
             });
+            document.getElementById('list').innerHTML = html || '<p class="text-gray-500">No APIs yet.</p>';
         }
 
-        document.getElementById('addForm').addEventListener('submit', async function(e) {
+        document.getElementById('form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const data = {
                 name: document.getElementById('name').value,
                 url: document.getElementById('url').value,
                 method: document.getElementById('method').value,
-                description: document.getElementById('description').value,
                 category: document.getElementById('category').value
             };
-            const res = await fetch('/apis/', {
+            await fetch('/apis/', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(data)
             });
-            if (res.ok) {
-                document.getElementById('addForm').reset();
-                loadAPIs();
-            }
+            document.getElementById('form').reset();
+            loadAPIs();
         });
 
         async function deleteAPI(id) {
